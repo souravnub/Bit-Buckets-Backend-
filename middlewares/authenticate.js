@@ -13,11 +13,6 @@ const authenticateUser = async (req, res, next) => {
 
     try {
         const { userId } = jwt.verify(token, process.env.JWT_SECRET);
-        const userFound = await User.findById(userId);
-        if (!userFound) {
-            // now what if the webtoken is verified by the user doesnot exist in db ... (this might happen when the user might have altered the jwt's payload)
-            throw new Error(); // just throwing error if user doesnot exist in db .. this will be catched afterwards
-        }
         req.userId = userId;
         next();
     } catch (err) {

@@ -21,6 +21,7 @@ app.get("/", (req, res) => {
 });
 app.use("/api/auth", require("./routes/authRouter"));
 app.use("/api/buckets", require("./routes/bucketsRouter"));
+app.use("/api/users", require("./routes/usersRouter"));
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

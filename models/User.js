@@ -5,17 +5,17 @@ const AutoIncrement = require("mongoose-sequence")(mongoose);
 
 const UserSchema = new mongoose.Schema(
     {
-        user_ref: { type: Number, immutable: true },
-        user_name: {
+        userRef: { type: Number, immutable: true },
+        userName: {
             type: String,
             required: true,
             trim: true,
             minLength: [3, "username must be 3 or more than 3 characters long"],
         },
-        profile_img: {
+        profileImg: {
             type: String,
             default:
-                "https://t4.ftcdn.net/jpg/00/97/00/09/360_F_97000908_wwH2goIihwrMoeV9QF3BW6HtpsVFaNVM.jpg",
+                "https://res.cloudinary.com/sourav-cloudinary-account/image/upload/v1662185657/Bit-Buckets/avatar-unknown.png",
         },
         email: {
             type: String,
@@ -31,7 +31,14 @@ const UserSchema = new mongoose.Schema(
             type: String,
             required: [true, "password is required"],
         },
-        linked_users: [
+        accessibleBuckets: [
+            {
+                type: mongoose.Types.ObjectId,
+                ref: "Bucket",
+                immutable: true,
+            },
+        ],
+        linkedUsers: [
             {
                 type: mongoose.Types.ObjectId,
                 ref: "Bucket",
@@ -42,7 +49,7 @@ const UserSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-UserSchema.plugin(AutoIncrement, { inc_field: "user_ref" });
+UserSchema.plugin(AutoIncrement, { inc_field: "userRef" });
 
 // hashing the password before saving the user to the db
 UserSchema.pre("save", async function () {

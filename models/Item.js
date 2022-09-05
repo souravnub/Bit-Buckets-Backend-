@@ -7,19 +7,19 @@ const ItemSchema = new Schema(
             ref: "User",
             required: [true, "userId must be passed while creating an item"],
         },
-        bucket_id: {
+        bucketId: {
             type: Types.ObjectId,
             ref: "Bucket",
             required: [true, "bucket Id must be passed while creating an item"],
         },
         name: { type: String, required: [true, "item name is required"] },
         quantity: { type: String, default: "1kg" }, // can be 1pcs , 1 gram , 1 milligram , etc..
-        is_purchased: { type: Boolean, default: false },
+        isPurchased: { type: Boolean, default: false },
         discription: {
             type: String,
             minLength: [3, "minimum description length should be 3"],
         },
-        priority_level: {
+        priorityLevel: {
             type: Number,
             enum: {
                 values: [1, 2, 3, 4],
@@ -38,7 +38,7 @@ const ItemSchema = new Schema(
                         "providing username is must while commenting",
                     ],
                 },
-                user_name: { type: String, required: true },
+                userName: { type: String, required: true },
                 comment: {
                     type: String,
                     minLength: [3, "minimum comment length should be 3"],

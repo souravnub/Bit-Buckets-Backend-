@@ -9,7 +9,11 @@ const User = require("../models/User");
 const register = async (req, res) => {
     const user = await User.create(req.body);
     const token = user.genToken();
-    res.status(StatusCodes.CREATED).json({ success: true, token });
+    res.status(StatusCodes.CREATED).json({
+        success: true,
+        token,
+        message: "registered successfully",
+    });
 };
 
 // @route : POST /api/auth/login
