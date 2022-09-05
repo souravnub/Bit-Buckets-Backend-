@@ -78,6 +78,44 @@ const createBucket = async (req, res) => {
         owner: req.userId,
         ...req.body,
     });
+
+    // below code block is for giving the access of the bucket to linked users
+    // if i would have used this in post save middleware of the mongoose then I might not have a chance to tell the owner about the users that were denied access to the bucket due to some error ... (not completely sure!!!)
+    const user = await User.findById(req.userId);
+    const linkedUsers = user.linkedUsers;
+
+    const linkedUserPromiseArr = linkedUsers.map((userId) => {
+        let user = userId.toString();
+        return User.updateOne(
+            { _id: user },
+            { $push: { accessibleBuckets: created_bucket._id } }
+        );
+    });
+
+    const linkedUserAccessRes = await Promise.allSettled(linkedUserPromiseArr);
+
+    // err Arr will contain the ids of the users which got some rejection while giving access ...
+
+    let errArr = [];
+    linkedUserAccessRes.forEach((resObj, idx) => {
+        if (resObj.status === "rejected") {
+            errArr.push(linkedUsers[idx]);
+        }
+    });
+
+    if (errArr.length !== 0) {
+        return res.status(StatusCodes.MULTI_STATUS).json({
+            success: false,
+            // message : bucket had been created successfully , but  2 out of 10 users were denied access to it due to some error
+            message: `bucket had been created successfully , but ${
+                errArr.length
+            } out of ${linkedUsers.length} ${
+                linkedUsers.length > 1 ? "user" : "users"
+            } were denied access to it due to some error`,
+            access_rejected_to: errArr,
+        });
+    }
+
     res.json({
         success: true,
         bucket: created_bucket,
