@@ -1,7 +1,12 @@
 const { StatusCodes } = require("http-status-codes");
-const { BadRequestError } = require("../errors");
+const {
+    BadRequestError,
+    UnauthorizedError,
+    NotFoundError,
+} = require("../errors");
 const Bucket = require("../models/Bucket");
 const Items = require("../models/Item");
+const User = require("../models/User");
 const isObject = require("../utils/isObject");
 
 // @Authorization : true (for ALL requests)
@@ -147,17 +152,22 @@ const updateItem = async (req, res) => {
 
     // extraProps are the properties that an accessOnlyUser is trying to change
     // ex. the accessOnlyUsers are having the privilage to change two props only : isPurchased & comments. Say an accessOnlyUser is trying to change name of the item along with isPurchased and comments ... then name over here is the extra prop that he is trying to change and hence we should respond that this prop cannot be set by you...
-    let extraProps = [];
 
     if (userWithAccessOnly) {
-        extraProps = Object.keys(changeToMake).map((prop) => {
+        let extraProps = Object.keys(changeToMake).filter((prop) => {
             if (prop !== "isPurchased" && prop !== "comments") {
                 return prop;
             }
         });
 
-        const { comments, isPurchased } = req.body;
-        changeToMake = { comments, isPurchased };
+        const { isPurchased } = req.body;
+        changeToMake = { isPurchased };
+
+        if (extraProps.length > 0) {
+            throw new UnauthorizedError(
+                "not authorized to introduce the mentioned changes to the item"
+            );
+        }
     }
 
     const updated_item = await Items.findOneAndUpdate(
@@ -180,6 +190,121 @@ const updateItem = async (req, res) => {
     });
 };
 
+// @route : POST /api/buckets/:bucketId/items/:itemId/comments
+// @desc : adding a comment to an item
+// @AccessCheck : true
+// reqBody : required (an object containing the comment) -> {comment : "comment here"}
+const postComment = async (req, res) => {
+    const { bucketId, itemId } = req.params;
+    const userId = req.userId;
+    const comment = req.body.comment;
+
+    const { userName, profileImg } = await User.findById(userId);
+
+    const posted_comment = await Items.findOneAndUpdate(
+        { _id: itemId, bucketId },
+        {
+            $push: {
+                comments: { user: userId, profileImg, userName, comment },
+            },
+        },
+        { new: true, runValidators: true }
+    );
+
+    if (!posted_comment) {
+        throw new NotFoundError("no item found with the given id");
+    }
+
+    res.json({
+        success: true,
+        postedComment: posted_comment,
+        message: "comment posted successfully",
+    });
+};
+
+// @route : DELETE /api/buckets/:bucketId/items/:itemId/comments/:commentId
+// @desc : for deleting a comment on an item
+const deleteComment = async (req, res) => {
+    const { userId } = req;
+    const { bucketId, itemId, commentId } = req.params;
+
+    const item = await Items.findOne({ _id: itemId, bucketId });
+
+    if (!item) {
+        throw new NotFoundError("item not found");
+    }
+
+    let is_comment_present = item.comments.find(
+        (comment) =>
+            comment.user.toString() === userId &&
+            comment._id.toString() === commentId
+    );
+
+    if (!is_comment_present) {
+        throw new NotFoundError("comment not found");
+    }
+
+    const prev_comments_arr = item.comments;
+    const new_comments_arr = prev_comments_arr.filter((comment) => {
+        if (!(comment._id.toString() === commentId)) {
+            return comment;
+        }
+    });
+
+    // not using item.updateOne as it will not return the docuemt but a mongoose object
+    await Items.findByIdAndUpdate(itemId, { comments: new_comments_arr });
+
+    res.json({
+        success: true,
+        deletedComment: is_comment_present,
+        message: "comment removed successfully",
+    });
+};
+
+// @route : PATCH /api/buckets/:bucketId/items/:itemId/comments/:commentId
+// @desc : updating a comment
+
+const updateComment = async (req, res) => {
+    const { userId } = req;
+    const { bucketId, itemId, commentId } = req.params;
+    const { comment: commentText } = req.body;
+
+    const item = await Items.findOne({ _id: itemId, bucketId });
+
+    if (!item) {
+        throw new NotFoundError("item not found");
+    }
+
+    let is_comment_present = item.comments.find(
+        (comment) =>
+            comment.user.toString() === userId &&
+            comment._id.toString() === commentId
+    );
+
+    if (!is_comment_present) {
+        throw new NotFoundError("comment not found");
+    }
+
+    const prev_comments_arr = item.comments;
+    let updated_comment;
+    const new_comments_arr = prev_comments_arr.filter((comment) => {
+        if (comment._id.toString() === commentId) {
+            comment.comment = commentText;
+            updated_comment = comment;
+            return comment;
+        }
+        return comment;
+    });
+
+    await item.updateOne({ comments: new_comments_arr });
+
+    res.json({
+        success: true,
+        updatedComment: updated_comment,
+        message: "comment updated successfully",
+    });
+};
+
 module.exports = {
     getAllItems,
     getItem,
@@ -187,4 +312,7 @@ module.exports = {
     deleteItem,
     deleteItems,
     updateItem,
+    postComment,
+    deleteComment,
+    updateComment,
 };

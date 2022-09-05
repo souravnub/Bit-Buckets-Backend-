@@ -14,6 +14,9 @@ const {
     deleteItem,
     deleteItems,
     updateItem,
+    postComment,
+    deleteComment,
+    updateComment,
 } = require("../controllers/itemsController");
 const authenticateUser = require("../middlewares/authenticate");
 const checkAccess = require("../middlewares/checkAccess");
@@ -38,5 +41,9 @@ router.post("/:bucketId/items", createItem);
 router.delete("/:bucketId/items", deleteItems);
 router.delete("/:bucketId/items/:itemId", deleteItem);
 router.patch("/:bucketId/items/:itemId", checkAccess, updateItem);
+
+router.post("/:bucketId/items/:itemId/comments", checkAccess, postComment);
+router.delete("/:bucketId/items/:itemId/comments/:commentId", deleteComment);
+router.patch("/:bucketId/items/:itemId/comments/:commentId", updateComment);
 
 module.exports = router;

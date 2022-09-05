@@ -96,8 +96,7 @@ const createBucket = async (req, res) => {
 
     // err Arr will contain the ids of the users which got some rejection while giving access ...
 
-    let errArr = [];
-    linkedUserAccessRes.forEach((resObj, idx) => {
+    let errArr = linkedUserAccessRes.filter((resObj, idx) => {
         if (resObj.status === "rejected") {
             errArr.push(linkedUsers[idx]);
         }

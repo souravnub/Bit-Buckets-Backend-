@@ -33,14 +33,18 @@ const ItemSchema = new Schema(
                     type: Types.ObjectId,
                     ref: "User",
                     immutable: true,
+                },
+                userName: { type: String, trim: true, required: true },
+                profileImg: {
+                    type: String,
                     required: [
                         true,
-                        "providing username is must while commenting",
+                        "passing in profile img is must while commenting",
                     ],
                 },
-                userName: { type: String, required: true },
                 comment: {
                     type: String,
+                    trim: true,
                     minLength: [3, "minimum comment length should be 3"],
                     required: true,
                 },
