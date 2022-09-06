@@ -16,6 +16,7 @@ const BucketSchema = new mongoose.Schema(
             immutable: true,
             required: true,
         },
+        private: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

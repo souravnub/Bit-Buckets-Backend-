@@ -27,6 +27,46 @@ const getUsers = async (req, res) => {
     res.json({ success: true, users, nbHits: users.length, page });
 };
 
+// @route : GET /api/users/:userId/buckets
+// @desc : get all the buckets of a user that are public
+const getUserPublicBuckets = async (req, res) => {
+    const { limit, sort, title, bucketRef } = req.query;
+
+    let buckets;
+
+    // it is awaited afterwards...
+    buckets = Bucket.find({ owner: req.params.userId, private: false });
+
+    if (title || bucketRef) {
+        let searchObj = { owner: req.params.userId, private: false };
+        if (title) {
+            searchObj = {
+                ...searchObj,
+                title: { $regex: title.trim(), $options: "i" },
+            };
+        }
+        if (bucketRef) {
+            searchObj = { ...searchObj, bucketRef };
+        }
+        buckets = Bucket.find(searchObj);
+    }
+
+    if (limit) {
+        buckets = buckets.limit(limit);
+    }
+    if (sort) {
+        const sortStr = sort.split(",").join(" ");
+        buckets = buckets.sort(sortStr);
+    } else {
+        // if sort option is not provided then sort by createAt in desc order
+        buckets = buckets.sort("-createdAt");
+    }
+
+    buckets = await buckets;
+
+    res.json({ success: true, buckets, nbHits: buckets.length });
+};
+
 // @route : POST /api/users/:userId/giveBucketAccess/:bucketId
 // @desc : give bucket access to another user
 // @Authorization : true
@@ -169,6 +209,7 @@ const unLinkUser = async (req, res) => {
 
 module.exports = {
     getUsers,
+    getUserPublicBuckets,
     giveBucketAccessToAnotherUser,
     removeBucketAccessFromUser,
     linkUser,

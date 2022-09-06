@@ -3,9 +3,10 @@ const {
     createBucket,
     deleteBucket,
     updateBucket,
-    getAllBuckets,
+    getAllPublicBuckets,
     getBucket,
-    giveBucketAccessToAnotherUser,
+    getAllBucketsOfCurrentUser,
+    getUsersWithAccess,
 } = require("../controllers/bucketsController");
 const {
     getAllItems,
@@ -22,15 +23,17 @@ const authenticateUser = require("../middlewares/authenticate");
 const checkAccess = require("../middlewares/checkAccess");
 const router = express.Router();
 
-// all the bucket resources would require the user to be authorized
-router.use(authenticateUser);
-
+// base route : /api/buckets
 // checkAccess is a middleware that will handle the access of the users that are not the creators of the bucket but are given access the creator of the bucket
 
-// base route : /api/buckets
+router.get("/public", getAllPublicBuckets);
 
-router.get("/", getAllBuckets);
+// all the bucket resources below would require the user to be authorized
+router.use(authenticateUser);
+
+router.get("/", getAllBucketsOfCurrentUser);
 router.get("/:bucketId", checkAccess, getBucket);
+router.get("/:bucketId/accessUsers", getUsersWithAccess);
 router.post("/", createBucket);
 router.delete("/:id", deleteBucket);
 router.patch("/:id", updateBucket);

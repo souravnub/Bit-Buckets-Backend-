@@ -3,20 +3,63 @@ const { NotFoundError, UnauthorizedError } = require("../errors");
 const Bucket = require("../models/Bucket");
 const User = require("../models/User");
 
-// @Authorization : true(for ALL requests)
-
-// @route : GET /api/buckets/
+// @route : GET /api/buckets/public
 // @desc : get all buckets
 
-const getAllBuckets = async (req, res) => {
+const getAllPublicBuckets = async (req, res) => {
     const { limit, sort, fields, title, bucketRef } = req.query;
+
+    let buckets;
+
+    // it is awaited afterwards...
+    buckets = Bucket.find({ private: false });
+
+    if (title || bucketRef) {
+        let searchObj = { private: false };
+        if (title) {
+            searchObj = {
+                ...searchObj,
+                title: { $regex: title.trim(), $options: "i" },
+            };
+        }
+        if (bucketRef) {
+            searchObj = { ...searchObj, bucketRef };
+        }
+        buckets = Bucket.find(searchObj);
+    }
+
+    if (limit) {
+        buckets = buckets.limit(limit);
+    }
+    if (sort) {
+        const sortStr = sort.split(",").join(" ");
+        buckets = buckets.sort(sortStr);
+    } else {
+        // if sort option is not provided then sort by createAt in desc order
+        buckets = buckets.sort("-createdAt");
+    }
+    if (fields) {
+        const required_fields = fields.split(",").join(" ");
+        buckets = buckets.select(required_fields);
+    }
+
+    buckets = await buckets;
+
+    res.json({ success: true, buckets, nbHits: buckets.length });
+};
+// @Authorization : true(for ALL requests below)
+
+//@route : GET /api/buckets
+// @desc : get all the buckets for the user who is asking for .... (both private and public buckets)
+const getAllBucketsOfCurrentUser = async (req, res) => {
+    const { limit, sort, fields, title, bucketRef, private } = req.query;
 
     let buckets;
 
     // it is awaited afterwards...
     buckets = Bucket.find({ owner: req.userId });
 
-    if (title || bucketRef) {
+    if (title || bucketRef || private) {
         let searchObj = { owner: req.userId };
         if (title) {
             searchObj = {
@@ -26,6 +69,13 @@ const getAllBuckets = async (req, res) => {
         }
         if (bucketRef) {
             searchObj = { ...searchObj, bucketRef };
+        }
+        if (private) {
+            if (private === "true") {
+                searchObj = { ...searchObj, private: true };
+            } else {
+                searchObj = { ...searchObj, private: false };
+            }
         }
         buckets = Bucket.find(searchObj);
     }
@@ -177,10 +227,33 @@ const updateBucket = async (req, res) => {
     });
 };
 
+// @route : GET /api/buckets/:bucketId/accessUsers
+// @desc : get all linked users to a bucket
+const getUsersWithAccess = async (req, res) => {
+    const { bucketId } = req.params;
+    const userId = req.userId;
+
+    const bucket = await Bucket.findOne({ _id: bucketId });
+    if (!bucket) {
+        throw new NotFoundError("bucket not found");
+    }
+    if (!(bucket.owner.toString() === userId)) {
+        throw new UnauthorizedError("not authorized to access this bucket");
+    }
+
+    const usersWithAccess = await User.find({
+        accessibleBuckets: bucketId,
+    }).select("-password -accessibleBuckets -linkedUsers");
+
+    res.json({ success: true, usersWithAccess });
+};
+
 module.exports = {
     createBucket,
     deleteBucket,
     updateBucket,
-    getAllBuckets,
+    getAllPublicBuckets,
     getBucket,
+    getAllBucketsOfCurrentUser,
+    getUsersWithAccess,
 };
