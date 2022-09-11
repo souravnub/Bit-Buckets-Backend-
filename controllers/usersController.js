@@ -39,6 +39,13 @@ const deleteUser = async (req, res) => {
     }
 
     await user.delete();
+    //remove links of the current user from other users (not doing it in the middleware because a user can only be deleted from one route only and there is no other method to delete a user .... as in Buckets  , , a bucket can be deleted directly manually and also if a user is deleted then the buckets are deleted hence we have two methods to delete a bucket therefore so as to not repeat the code we used a middleware ... but a user cannot be deleted by such a side-effect therefore is not using any middleware)
+    const linked_with = await User.updateMany(
+        { linkedUsers: user._id },
+        { $pull: { linkedUsers: user._id } }
+    );
+    console.log(linked_with);
+
     res.json({ success: true, message: "user deleted successfully" });
 };
 
