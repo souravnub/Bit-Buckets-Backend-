@@ -1,8 +1,46 @@
 const { StatusCodes } = require("http-status-codes");
-const { NotFoundError, BadRequestError } = require("../errors");
+const {
+    NotFoundError,
+    BadRequestError,
+    UnauthorizedError,
+} = require("../errors");
 const Bucket = require("../models/Bucket");
 const User = require("../models/User");
+const compareBcryptHash = require("../utils/compareBcryptHash");
 const isStringPositiveInteger = require("../utils/isStringPositiveInteger");
+
+// @route : DELETE /api/users
+// @desc : delete a user
+// reqHeaders : password (password of the current user)
+
+const deleteUser = async (req, res) => {
+    const userId = req.userId;
+    const { password } = req.headers;
+
+    if (!password.trim()) {
+        throw new BadRequestError(
+            "providing password while deleting a user is must"
+        );
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        throw new NotFoundError("no user found");
+    }
+
+    const isPasswordCorrect = await compareBcryptHash(
+        password.trim(),
+        user.password
+    );
+
+    if (!isPasswordCorrect) {
+        throw new UnauthorizedError("invalid credentials cannot delete user");
+    }
+
+    await user.delete();
+    res.json({ success: true, message: "user deleted successfully" });
+};
 
 // @route : GET /api/users
 // @desc : get all users
@@ -62,7 +100,7 @@ const getUserPublicBuckets = async (req, res) => {
         buckets = buckets.sort("-createdAt");
     }
 
-    buckets = await buckets;
+    buckets = await buckets.select("-password");
 
     res.json({ success: true, buckets, nbHits: buckets.length });
 };
@@ -214,4 +252,5 @@ module.exports = {
     removeBucketAccessFromUser,
     linkUser,
     unLinkUser,
+    deleteUser,
 };

@@ -164,9 +164,12 @@ const updateItem = async (req, res) => {
         changeToMake = { isPurchased };
 
         if (extraProps.length > 0) {
-            throw new UnauthorizedError(
-                "not authorized to introduce the mentioned changes to the item"
-            );
+            return res.status(StatusCodes.FORBIDDEN).json({
+                success: false,
+                message:
+                    "not authorized to make the mentioned changes to the item",
+                changesNotAllowed: extraProps,
+            });
         }
     }
 

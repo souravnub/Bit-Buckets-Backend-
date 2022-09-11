@@ -34,7 +34,8 @@ const checkAccess = async (req, res, next) => {
 
         res.status(StatusCodes.FORBIDDEN).json({
             success: false,
-            message: "this resource is not accessible",
+            message:
+                "this resource is not accessible. You are neither the owner of the bucket nor a user having access to it,therefore gain access by providing the correct password for the bucket first and then try again",
         });
         return;
     }

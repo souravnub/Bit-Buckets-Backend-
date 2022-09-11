@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
+const compareBcryptHash = require("../utils/compareBcryptHash");
+const genHash = require("../utils/genHash");
+const Bucket = require("./Bucket");
 const AutoIncrement = require("mongoose-sequence")(mongoose);
 
 const UserSchema = new mongoose.Schema(
@@ -54,22 +56,29 @@ UserSchema.plugin(AutoIncrement, { inc_field: "userRef" });
 // hashing the password before saving the user to the db
 UserSchema.pre("save", async function () {
     const password = this.password;
-    const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(password, salt);
+    const hash = await genHash(password);
     this.password = hash;
+});
+
+UserSchema.post("remove", async function () {
+    const buckets = await Bucket.find({ owner: this._id });
+    const buckets_promise_arr = buckets.map((bucket) =>
+        Bucket.findByIdAndDelete(bucket._id)
+    );
+    await Promise.allSettled(buckets_promise_arr);
 });
 
 // method for generating jwt
 UserSchema.methods.genToken = function () {
     const token = jwt.sign({ userId: this._id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_LIFETIME,
+        expiresIn: process.env.JWT_LIFETIME || "7d",
     });
     return token;
 };
 
 // method for comparing hash
-UserSchema.methods.compareHash = function (passwordStr) {
-    const isPasswordValid = bcrypt.compare(passwordStr, this.password);
+UserSchema.methods.compareHash = async function (passwordStr) {
+    const isPasswordValid = await compareBcryptHash(passwordStr, this.password);
     return isPasswordValid;
 };
 

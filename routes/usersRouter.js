@@ -6,6 +6,7 @@ const {
     linkUser,
     unLinkUser,
     getUserPublicBuckets,
+    deleteUser,
 } = require("../controllers/usersController");
 const authenticateUser = require("../middlewares/authenticate");
 
@@ -18,6 +19,7 @@ router.get("/:userId/buckets", getUserPublicBuckets);
 // below are the request that requires user authentication
 router.use(authenticateUser);
 
+router.delete("/", deleteUser);
 router.post(
     "/:userId/giveBucketAccess/:bucketId",
     giveBucketAccessToAnotherUser

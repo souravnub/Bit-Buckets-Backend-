@@ -1,7 +1,12 @@
 const { StatusCodes } = require("http-status-codes");
-const { NotFoundError, UnauthorizedError } = require("../errors");
+const {
+    NotFoundError,
+    UnauthorizedError,
+    BadRequestError,
+} = require("../errors");
 const Bucket = require("../models/Bucket");
 const User = require("../models/User");
+const genHash = require("../utils/genHash");
 
 // @route : GET /api/buckets/public
 // @desc : get all buckets
@@ -43,7 +48,7 @@ const getAllPublicBuckets = async (req, res) => {
         buckets = buckets.select(required_fields);
     }
 
-    buckets = await buckets;
+    buckets = await buckets.select("-password");
 
     res.json({ success: true, buckets, nbHits: buckets.length });
 };
@@ -95,7 +100,7 @@ const getAllBucketsOfCurrentUser = async (req, res) => {
         buckets = buckets.select(required_fields);
     }
 
-    buckets = await buckets;
+    buckets = await buckets.select("-password");
 
     res.json({ success: true, buckets, nbHits: buckets.length });
 };
@@ -103,11 +108,12 @@ const getAllBucketsOfCurrentUser = async (req, res) => {
 // @route : GET /api/buckets/:id
 // @desc : get a bucket
 // @AccessCheck : true
+// reqHeader (bucketpass) : requierd {if the user is not having access to bucket or if he is not the owner of the bucket}
 
 const getBucket = async (req, res) => {
     const { bucketId } = req.params;
 
-    const bucket = await Bucket.findOne({ _id: bucketId });
+    const bucket = await Bucket.findOne({ _id: bucketId }).select("-password");
 
     if (!bucket) {
         res.status(StatusCodes.NOT_FOUND).json({
@@ -129,7 +135,7 @@ const createBucket = async (req, res) => {
         ...req.body,
     });
 
-    // below code block is for giving the access of the bucket to linked users
+    // *** below code block is for giving the access of the bucket to linked users ***
     // if i would have used this in post save middleware of the mongoose then I might not have a chance to tell the owner about the users that were denied access to the bucket due to some error ... (not completely sure!!!)
     const user = await User.findById(req.userId);
     const linkedUsers = user.linkedUsers;
@@ -148,7 +154,7 @@ const createBucket = async (req, res) => {
 
     let errArr = linkedUserAccessRes.filter((resObj, idx) => {
         if (resObj.status === "rejected") {
-            errArr.push(linkedUsers[idx]);
+            return linkedUsers[idx];
         }
     });
 
@@ -183,20 +189,6 @@ const deleteBucket = async (req, res) => {
         owner: req.userId,
     });
 
-    if (!removed_bucket) {
-        throw new NotFoundError("No bucket found to delete !");
-    }
-
-    const usersHavingAccessToBucket = await User.find({
-        accessibleBuckets: id,
-    });
-
-    const deletingBucketPromiseArr = usersHavingAccessToBucket.map((user) => {
-        return user.updateOne({ $pull: { accessibleBuckets: id } });
-    });
-
-    await Promise.allSettled(deletingBucketPromiseArr);
-
     res.json({
         success: true,
         bucket: removed_bucket,
@@ -209,6 +201,12 @@ const deleteBucket = async (req, res) => {
 // reqBody : required
 const updateBucket = async (req, res) => {
     const { id } = req.params;
+    const { password } = req.body;
+
+    if (password) {
+        let password_hash = await genHash(password);
+        req.body = { ...req.body, password: password_hash };
+    }
 
     const updated_bucket = await Bucket.findOneAndUpdate(
         { _id: id, owner: req.userId },
@@ -224,6 +222,66 @@ const updateBucket = async (req, res) => {
         success: true,
         bucket: updated_bucket,
         message: "bucket updated successfully",
+    });
+};
+
+// @route : POST /api/buckets/:bucketId/gainAccess
+// @desc : an unknown user can gain the access to a bucket using this route by providing the correct password
+// reqHeaders : a bucket password (bucketpass) is requierd
+
+const gainAccessToBucket = async (req, res) => {
+    const { bucketId } = req.params;
+    const userId = req.userId;
+    const { bucketpass: bucketPass } = req.headers;
+
+    const bucketPromise = Bucket.findById(bucketId);
+    const userPromise = User.findById(userId);
+
+    const [{ value: bucket }, { value: user }] = await Promise.allSettled([
+        bucketPromise,
+        userPromise,
+    ]);
+
+    if (!bucket) {
+        throw new NotFoundError("bucket not found");
+    }
+    if (!user) {
+        throw new NotFoundError("user not found");
+    }
+
+    const is_already_having_access = user.accessibleBuckets.find(
+        (mongoId) => mongoId.toString() === bucketId
+    );
+    if (is_already_having_access) {
+        throw new BadRequestError(
+            "You already have access to bucket ,cannot provide access multiple times ! "
+        );
+    }
+    if (bucket.owner.toString() === userId) {
+        throw new BadRequestError(
+            "you are already owner of the bucket, therefore bucket is already accessible"
+        );
+    }
+    if (!bucketPass) {
+        throw new BadRequestError(
+            "a bucket password is must in request headers to gain access to it"
+        );
+    }
+
+    let isBucketPasswordCorrect = await bucket.compareHash(bucketPass);
+    if (!isBucketPasswordCorrect) {
+        return res.json({
+            success: false,
+            message: "bucket access denied due to invalid password",
+        });
+    }
+    // if user entered the correct pass then give him the access to the bucket -> this will allow him to access the bucket in future without entering the pass
+    await user.updateOne({
+        $push: { accessibleBuckets: bucketId },
+    });
+    res.json({
+        success: true,
+        message: "bucket access gained successfully",
     });
 };
 
@@ -256,4 +314,5 @@ module.exports = {
     getBucket,
     getAllBucketsOfCurrentUser,
     getUsersWithAccess,
+    gainAccessToBucket,
 };

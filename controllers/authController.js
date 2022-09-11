@@ -1,13 +1,20 @@
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, NotFoundError } = require("../errors");
 const User = require("../models/User");
+const compareBcryptHash = require("../utils/compareBcryptHash");
 
 // @route : POST /api/auth/register
 // @desc : creating a new user
 // reqBody : required
 
 const register = async (req, res) => {
-    const user = await User.create(req.body);
+    const { password, email, userName } = req.body;
+
+    const user = await User.create({
+        password: password.trim(),
+        userName,
+        email,
+    });
     const token = user.genToken();
     res.status(StatusCodes.CREATED).json({
         success: true,
