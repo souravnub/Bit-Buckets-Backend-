@@ -15,7 +15,7 @@ const ItemSchema = new Schema(
         name: { type: String, required: [true, "item name is required"] },
         quantity: { type: String, default: "1kg" }, // can be 1pcs , 1 gram , 1 milligram , etc..
         isPurchased: { type: Boolean, default: false },
-        discription: {
+        description: {
             type: String,
             minLength: [3, "minimum description length should be 3"],
         },

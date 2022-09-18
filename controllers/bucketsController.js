@@ -198,7 +198,7 @@ const deleteBucket = async (req, res) => {
 
 // @route : PATCH  /api/buckets/:id
 // @desc : update a bucket
-// reqBody : required
+// Body : required
 const updateBucket = async (req, res) => {
     const { id } = req.params;
     const { password } = req.body;

@@ -1,4 +1,3 @@
-const { StatusCodes } = require("http-status-codes");
 const {
     NotFoundError,
     BadRequestError,
@@ -72,6 +71,20 @@ const getUsers = async (req, res) => {
     res.json({ success: true, users, nbHits: users.length, page });
 };
 
+// @route : GET /api/users/me
+// @desc : getting the current user ,, , (pass the authentication and get yourself)
+const getUser = async (req, res) => {
+    const userId = req.userId;
+
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+        throw new NotFoundError("user not found");
+    }
+
+    res.json({ success: true, user });
+};
+
 // @route : GET /api/users/:userId/buckets
 // @desc : get all the buckets of a user that are public
 const getUserPublicBuckets = async (req, res) => {
@@ -120,9 +133,7 @@ const giveBucketAccessToAnotherUser = async (req, res) => {
     const owner = req.userId;
     const bucket = await Bucket.findOne({ _id: bucketId, owner });
     if (!bucket) {
-        throw new NotFoundError(
-            "you are not authorized to provide other users access to this bucket"
-        );
+        throw new NotFoundError("no such bucket found under your ownership");
     }
 
     const user = await User.findOne({ _id: userToBeGivenAccess });
@@ -138,15 +149,17 @@ const giveBucketAccessToAnotherUser = async (req, res) => {
     }
 
     if (user.accessibleBuckets.includes(bucketId)) {
-        return res.status(StatusCodes.CONFLICT).json({
-            success: false,
-            message: "user is already having access to this bucket",
-        });
+        throw new BadRequestError(
+            `${user.userName} is already having access to the bucket , therefore cannot provide access again`
+        );
     }
 
     await user.updateOne({ $push: { accessibleBuckets: bucketId } });
 
-    res.json({ success: true, message: "access given successfully" });
+    res.json({
+        success: true,
+        message: `access of the bucket given successfully to ${user.userName}`,
+    });
 };
 
 // @route : POST /api/users/:userId/removeBucketAccess/:bucketId
@@ -159,13 +172,13 @@ const removeBucketAccessFromUser = async (req, res) => {
     const bucket = await Bucket.findOne({ _id: bucketId, owner });
 
     if (!bucket) {
-        throw new NotFoundError("bucket not found");
+        throw new NotFoundError("no such bucket found under your ownership");
     }
 
     const user = await User.findById(userToRemoveAccessFrom);
 
     if (!user) {
-        throw new NotFoundError("user to be given access not found");
+        throw new NotFoundError("user to be removed access from not found");
     }
 
     if (bucket.owner.toString() === userToRemoveAccessFrom) {
@@ -174,11 +187,16 @@ const removeBucketAccessFromUser = async (req, res) => {
         );
     }
 
+    if (!user.accessibleBuckets.includes(bucket._id)) {
+        throw new BadRequestError(
+            `${user.userName} is not having access to the bucket already ... therefore cannot perform the operation`
+        );
+    }
     await user.updateOne({ $pull: { accessibleBuckets: bucketId } });
 
     res.json({
         success: true,
-        message: "access from user removed successfully",
+        message: `access of bucket removed successfully from ${user.userName}`,
     });
 };
 
@@ -205,21 +223,28 @@ const linkUser = async (req, res) => {
         throw new NotFoundError(
             "the user to be linked is not found ... please make sure that the credentials of the user are valid"
         );
-    } else {
-        // if user is currently linked , then cannot link it again...
-        let isUserCurrentlyLinked = currentUser.linkedUsers.find(
-            (userMongoId) => userMongoId.toString() === userToLink
+    }
+    if (userToBeLinked._id.toString() === currentUser._id.toString()) {
+        throw new BadRequestError(
+            "you are trying to link yourself with you! that cannot be done"
         );
-        if (isUserCurrentlyLinked) {
-            throw new BadRequestError(
-                "user is already linked , cannot link again"
-            );
-        }
+    }
+    // if user is currently linked , then cannot link it again...
+    let isUserCurrentlyLinked = currentUser.linkedUsers.find(
+        (userMongoId) => userMongoId.toString() === userToLink
+    );
+    if (isUserCurrentlyLinked) {
+        throw new BadRequestError(
+            `${userToBeLinked.userName} is already linked with you, cannot link again`
+        );
     }
 
     await currentUser.updateOne({ $push: { linkedUsers: userToLink } });
 
-    res.json({ success: true, message: "user linked successfully" });
+    res.json({
+        success: true,
+        message: `${userToBeLinked.userName} linked successfully`,
+    });
 };
 
 // @route : POST /api/users/unlink/:userToUnLink
@@ -254,6 +279,7 @@ const unLinkUser = async (req, res) => {
 
 module.exports = {
     getUsers,
+    getUser,
     getUserPublicBuckets,
     giveBucketAccessToAnotherUser,
     removeBucketAccessFromUser,

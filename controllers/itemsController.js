@@ -1,9 +1,5 @@
 const { StatusCodes } = require("http-status-codes");
-const {
-    BadRequestError,
-    UnauthorizedError,
-    NotFoundError,
-} = require("../errors");
+const { BadRequestError, NotFoundError } = require("../errors");
 const Bucket = require("../models/Bucket");
 const Items = require("../models/Item");
 const User = require("../models/User");
@@ -63,6 +59,16 @@ const createItem = async (req, res) => {
     const itemsArr = req.body;
     const userId = req.userId;
 
+    const bucket = await Bucket.findOne({ _id: bucketId, owner: userId });
+
+    if (!bucket) {
+        throw new NotFoundError(
+            `no bucket found to append ${
+                itemsArr.length > 1 ? "items" : "item"
+            }  to`
+        );
+    }
+
     const mainItemsArr = itemsArr.map((item) => {
         return { ...item, userId, bucketId };
     });
@@ -72,7 +78,9 @@ const createItem = async (req, res) => {
     res.status(StatusCodes.CREATED).json({
         success: true,
         items: created_items,
-        message: `${created_items.length} items created successfully`,
+        message: `${created_items.length} ${
+            created_items.length > 1 ? "items" : "item"
+        } created successfully`,
     });
 };
 
@@ -127,7 +135,7 @@ const deleteItems = async (req, res) => {
     });
 
     res.json({
-        success: true,
+        success: number_of_deleted_items === 0 ? false : true,
         message:
             number_of_deleted_items === 0
                 ? "No item was deleted"
@@ -167,7 +175,7 @@ const updateItem = async (req, res) => {
             return res.status(StatusCodes.FORBIDDEN).json({
                 success: false,
                 message:
-                    "not authorized to make the mentioned changes to the item",
+                    "not authorized to make the desired changes to the item",
                 changesNotAllowed: extraProps,
             });
         }
@@ -290,7 +298,7 @@ const updateComment = async (req, res) => {
 
     const prev_comments_arr = item.comments;
     let updated_comment;
-    const new_comments_arr = prev_comments_arr.filter((comment) => {
+    const new_comments_arr = prev_comments_arr.map((comment) => {
         if (comment._id.toString() === commentId) {
             comment.comment = commentText;
             updated_comment = comment;
