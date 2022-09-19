@@ -18,14 +18,14 @@ const deleteUser = async (req, res) => {
 
     if (!password.trim()) {
         throw new BadRequestError(
-            "providing password while deleting a user is must"
+            "Providing password while deleting a user is must"
         );
     }
 
     const user = await User.findById(userId);
 
     if (!user) {
-        throw new NotFoundError("no user found");
+        throw new NotFoundError("No user found");
     }
 
     const isPasswordCorrect = await compareBcryptHash(
@@ -34,7 +34,7 @@ const deleteUser = async (req, res) => {
     );
 
     if (!isPasswordCorrect) {
-        throw new UnauthorizedError("invalid credentials cannot delete user");
+        throw new UnauthorizedError("Invalid credentials cannot delete user");
     }
 
     await user.delete();
@@ -45,7 +45,7 @@ const deleteUser = async (req, res) => {
     );
     console.log(linked_with);
 
-    res.json({ success: true, message: "user deleted successfully" });
+    res.json({ success: true, message: "User deleted successfully" });
 };
 
 // @route : GET /api/users
@@ -79,7 +79,7 @@ const getUser = async (req, res) => {
     const user = await User.findById(userId).select("-password");
 
     if (!user) {
-        throw new NotFoundError("user not found");
+        throw new NotFoundError("User not found");
     }
 
     res.json({ success: true, user });
@@ -133,18 +133,18 @@ const giveBucketAccessToAnotherUser = async (req, res) => {
     const owner = req.userId;
     const bucket = await Bucket.findOne({ _id: bucketId, owner });
     if (!bucket) {
-        throw new NotFoundError("no such bucket found under your ownership");
+        throw new NotFoundError("No such bucket found under your ownership");
     }
 
     const user = await User.findOne({ _id: userToBeGivenAccess });
 
     if (!user) {
-        throw new NotFoundError("user to be given access to not found");
+        throw new NotFoundError("User to be given access to not found");
     }
 
     if (bucket.owner.toString() === userToBeGivenAccess) {
         throw new BadRequestError(
-            "you are the owner of the bucket and hence having the access"
+            "You are the owner of the bucket and hence having the access"
         );
     }
 
@@ -158,7 +158,7 @@ const giveBucketAccessToAnotherUser = async (req, res) => {
 
     res.json({
         success: true,
-        message: `access of the bucket given successfully to ${user.userName}`,
+        message: `Access of the bucket given successfully to ${user.userName}`,
     });
 };
 
@@ -172,18 +172,18 @@ const removeBucketAccessFromUser = async (req, res) => {
     const bucket = await Bucket.findOne({ _id: bucketId, owner });
 
     if (!bucket) {
-        throw new NotFoundError("no such bucket found under your ownership");
+        throw new NotFoundError("No such bucket found under your ownership");
     }
 
     const user = await User.findById(userToRemoveAccessFrom);
 
     if (!user) {
-        throw new NotFoundError("user to be removed access from not found");
+        throw new NotFoundError("User to be removed access from not found");
     }
 
     if (bucket.owner.toString() === userToRemoveAccessFrom) {
         throw new BadRequestError(
-            "you are the owner of the bucket and hence access cannot be removed. Alternative : delete bucket"
+            "You are the owner of the bucket and hence access cannot be removed. Alternative : delete bucket"
         );
     }
 
@@ -196,7 +196,7 @@ const removeBucketAccessFromUser = async (req, res) => {
 
     res.json({
         success: true,
-        message: `access of bucket removed successfully from ${user.userName}`,
+        message: `Access of bucket removed successfully from ${user.userName}`,
     });
 };
 
@@ -216,17 +216,17 @@ const linkUser = async (req, res) => {
 
     if (!currentUser) {
         throw new NotFoundError(
-            "we are having  trouble while finding you... please login / register and try again"
+            "We are having  trouble while finding you... please login / register and try again"
         );
     }
     if (!userToBeLinked) {
         throw new NotFoundError(
-            "the user to be linked is not found ... please make sure that the credentials of the user are valid"
+            "The user to be linked is not found ... please make sure that the credentials of the user are valid"
         );
     }
     if (userToBeLinked._id.toString() === currentUser._id.toString()) {
         throw new BadRequestError(
-            "you are trying to link yourself with you! that cannot be done"
+            "You are trying to link yourself with you! that cannot be done"
         );
     }
     // if user is currently linked , then cannot link it again...
@@ -262,19 +262,19 @@ const unLinkUser = async (req, res) => {
 
     if (!currentUser) {
         throw new NotFoundError(
-            "we are having  trouble while finding you... please login / register and try again"
+            "We are having  trouble while finding you... please login / register and try again"
         );
     }
 
     if (!userToBeUnLinked) {
         throw new NotFoundError(
-            "cannot unlink the user, as it is not currently linked"
+            "Cannot unlink the user, as it is not currently linked"
         );
     }
 
     await currentUser.updateOne({ $pull: { linkedUsers: userToUnLink } });
 
-    res.json({ success: true, message: "user unlinked successfully" });
+    res.json({ success: true, message: "User unlinked successfully" });
 };
 
 module.exports = {

@@ -63,7 +63,7 @@ const createItem = async (req, res) => {
 
     if (!bucket) {
         throw new NotFoundError(
-            `no bucket found to append ${
+            `No bucket found to append ${
                 itemsArr.length > 1 ? "items" : "item"
             }  to`
         );
@@ -99,7 +99,7 @@ const deleteItem = async (req, res) => {
     if (!deleted_item) {
         return res.status(StatusCodes.NOT_FOUND).json({
             success: false,
-            message: "no item found to delete",
+            message: "No item found to delete",
         });
     }
 
@@ -116,7 +116,7 @@ const deleteItems = async (req, res) => {
 
     if (itemsToDelArr.length === 0 || !Array.isArray(itemsToDelArr)) {
         throw new BadRequestError(
-            "no items provided to delete or iterable is not valid , cannot perform the operation"
+            "No items provided to delete or iterable is not valid , cannot perform the operation"
         );
     }
 
@@ -154,7 +154,7 @@ const updateItem = async (req, res) => {
 
     if (!isObject(changeToMake)) {
         throw new BadRequestError(
-            "invalid request Body provided (valid type : object)"
+            "Invalid request Body provided (valid type : object)"
         );
     }
 
@@ -175,7 +175,7 @@ const updateItem = async (req, res) => {
             return res.status(StatusCodes.FORBIDDEN).json({
                 success: false,
                 message:
-                    "not authorized to make the desired changes to the item",
+                    "Not authorized to make the desired changes to the item",
                 changesNotAllowed: extraProps,
             });
         }
@@ -190,14 +190,14 @@ const updateItem = async (req, res) => {
     if (!updated_item) {
         res.status(StatusCodes.NOT_FOUND).json({
             success: false,
-            message: "no item found to update",
+            message: "No item found to update",
         });
     }
 
     res.json({
         success: true,
         item: updated_item,
-        message: "item updated successfully",
+        message: "Item updated successfully",
     });
 };
 
@@ -223,13 +223,13 @@ const postComment = async (req, res) => {
     );
 
     if (!posted_comment) {
-        throw new NotFoundError("no item found with the given id");
+        throw new NotFoundError("No item found with the given id");
     }
 
     res.json({
         success: true,
         postedComment: posted_comment,
-        message: "comment posted successfully",
+        message: "Comment posted successfully",
     });
 };
 
@@ -242,7 +242,7 @@ const deleteComment = async (req, res) => {
     const item = await Items.findOne({ _id: itemId, bucketId });
 
     if (!item) {
-        throw new NotFoundError("item not found");
+        throw new NotFoundError("Item not found");
     }
 
     let is_comment_present = item.comments.find(
@@ -252,7 +252,7 @@ const deleteComment = async (req, res) => {
     );
 
     if (!is_comment_present) {
-        throw new NotFoundError("comment not found");
+        throw new NotFoundError("Comment not found");
     }
 
     const prev_comments_arr = item.comments;
@@ -268,7 +268,7 @@ const deleteComment = async (req, res) => {
     res.json({
         success: true,
         deletedComment: is_comment_present,
-        message: "comment removed successfully",
+        message: "Comment removed successfully",
     });
 };
 
@@ -283,7 +283,7 @@ const updateComment = async (req, res) => {
     const item = await Items.findOne({ _id: itemId, bucketId });
 
     if (!item) {
-        throw new NotFoundError("item not found");
+        throw new NotFoundError("Item not found");
     }
 
     let is_comment_present = item.comments.find(
@@ -293,7 +293,7 @@ const updateComment = async (req, res) => {
     );
 
     if (!is_comment_present) {
-        throw new NotFoundError("comment not found");
+        throw new NotFoundError("Comment not found");
     }
 
     const prev_comments_arr = item.comments;
@@ -312,7 +312,7 @@ const updateComment = async (req, res) => {
     res.json({
         success: true,
         updatedComment: updated_comment,
-        message: "comment updated successfully",
+        message: "Comment updated successfully",
     });
 };
 

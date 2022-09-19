@@ -16,11 +16,11 @@ const checkAccess = async (req, res, next) => {
     ]);
 
     if (!bucket) {
-        throw new NotFoundError("no such bucket found");
+        throw new NotFoundError("No such bucket found");
     }
     if (!user) {
         throw new NotFoundError(
-            "no user found with the give userId to give access to"
+            "No user found with the give userId to give access to"
         );
     }
 
@@ -35,7 +35,7 @@ const checkAccess = async (req, res, next) => {
         res.status(StatusCodes.FORBIDDEN).json({
             success: false,
             message:
-                "this resource is not accessible. You are neither the owner of the bucket nor a user having access to it,therefore gain access by providing the correct password for the bucket first and then try again",
+                "This resource is not accessible. You are neither the owner of the bucket nor a user having access to it,therefore gain access by providing the correct password for the bucket first and then try again",
         });
         return;
     }

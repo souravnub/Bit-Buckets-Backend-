@@ -12,7 +12,7 @@ const UserSchema = new mongoose.Schema(
             type: String,
             required: true,
             trim: true,
-            minLength: [3, "username must be 3 or more than 3 characters long"],
+            minLength: [3, "Username must be 3 or more than 3 characters long"],
         },
         profileImg: {
             type: String,
@@ -21,7 +21,7 @@ const UserSchema = new mongoose.Schema(
         },
         email: {
             type: String,
-            required: [true, "email is required"],
+            required: [true, "Email is required"],
             trim: true,
             match: [
                 /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
@@ -31,7 +31,7 @@ const UserSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: [true, "password is required"],
+            required: [true, "Password is required"],
         },
         accessibleBuckets: [
             {

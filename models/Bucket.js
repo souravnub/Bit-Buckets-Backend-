@@ -43,7 +43,7 @@ BucketSchema.post("findOneAndDelete", async function (doc) {
     const User = require("./User");
 
     if (!doc) {
-        throw new NotFoundError("no bucket found");
+        throw new NotFoundError("No bucket found");
     }
     const { _id: bucketId } = doc;
 

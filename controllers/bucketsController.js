@@ -192,7 +192,7 @@ const deleteBucket = async (req, res) => {
     res.json({
         success: true,
         bucket: removed_bucket,
-        message: "bucket removed successfully",
+        message: "Bucket removed successfully",
     });
 };
 
@@ -221,7 +221,7 @@ const updateBucket = async (req, res) => {
     res.json({
         success: true,
         bucket: updated_bucket,
-        message: "bucket updated successfully",
+        message: "Bucket updated successfully",
     });
 };
 
@@ -272,7 +272,7 @@ const gainAccessToBucket = async (req, res) => {
     if (!isBucketPasswordCorrect) {
         return res.json({
             success: false,
-            message: "bucket access denied due to invalid password",
+            message: "Bucket access denied due to invalid password",
         });
     }
     // if user entered the correct pass then give him the access to the bucket -> this will allow him to access the bucket in future without entering the pass
@@ -281,7 +281,7 @@ const gainAccessToBucket = async (req, res) => {
     });
     res.json({
         success: true,
-        message: "bucket access gained successfully",
+        message: "Bucket access gained successfully",
     });
 };
 

@@ -1,6 +1,7 @@
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, NotFoundError } = require("../errors");
 const CustomAPIError = require("../errors/custom-api-error");
+const CustomFormError = require("../errors/custom-form-error");
 const User = require("../models/User");
 
 // @route : POST /api/auth/register
@@ -19,7 +20,7 @@ const register = async (req, res) => {
     res.status(StatusCodes.CREATED).json({
         success: true,
         token,
-        message: "registered successfully",
+        message: "Registered successfully",
     });
 };
 
@@ -30,13 +31,32 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     const { password, email } = req.body;
 
-    if (password.length === 0 || email.length === 0) {
-        throw new BadRequestError("both email and password should be provided");
+    let isValidationError = false;
+    let errorsArr = [];
+    let errorFields = [];
+
+    if (password.length === 0) {
+        isValidationError = true;
+        errorsArr.push("Password must be provided");
+        errorFields.push("password");
+    }
+    if (email.length === 0) {
+        isValidationError = true;
+        errorsArr.push("Email must be provided");
+        errorFields.push("email");
+    }
+
+    if (isValidationError) {
+        throw new CustomFormError({
+            message: "Both email and password are required",
+            errorFields,
+            errorsArr,
+        });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-        throw new NotFoundError("invalid credentials");
+        throw new NotFoundError("Invalid credentials");
     }
     const isPasswordCorrect = await user.compareHash(password);
     const token = user.genToken();
@@ -45,10 +65,10 @@ const login = async (req, res) => {
         return res.status(StatusCodes.OK).json({
             success: true,
             token,
-            message: "logged In successfully",
+            message: "Logged In successfully",
         });
     }
-    throw new BadRequestError("invalid credentials");
+    throw new BadRequestError("Invalid credentials");
 };
 
 module.exports = { login, register };

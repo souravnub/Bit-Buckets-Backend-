@@ -1,12 +1,12 @@
 const jwt = require("jsonwebtoken");
-const { UnauthorizedError, NotFoundError } = require("../errors");
+const { UnauthorizedError } = require("../errors");
 const User = require("../models/User");
 
 const authenticateUser = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        throw new UnauthorizedError("not authorized to access this resource");
+        throw new UnauthorizedError("Not authorized to access this resource");
     }
 
     const token = authHeader.split(" ")[1];
@@ -16,7 +16,7 @@ const authenticateUser = async (req, res, next) => {
         req.userId = userId;
         next();
     } catch (err) {
-        throw new UnauthorizedError("not authorized to access the resource");
+        throw new UnauthorizedError("Not authorized to access the resource");
     }
 };
 
