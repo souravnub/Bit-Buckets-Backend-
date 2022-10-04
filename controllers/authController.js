@@ -9,12 +9,13 @@ const User = require("../models/User");
 // reqBody : required
 
 const register = async (req, res) => {
-    const { password, email, userName } = req.body;
+    const { profileImg, password, email, userName } = req.body;
 
     const user = await User.create({
         password: password.trim(),
         userName,
         email,
+        profileImg,
     });
     const token = user.genToken();
     res.status(StatusCodes.CREATED).json({

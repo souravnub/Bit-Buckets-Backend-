@@ -10,14 +10,13 @@ const UserSchema = new mongoose.Schema(
         userRef: { type: Number, immutable: true },
         userName: {
             type: String,
-            required: true,
+            required: [true, "Username is required"],
             trim: true,
             minLength: [3, "Username must be 3 or more than 3 characters long"],
         },
         profileImg: {
             type: String,
-            default:
-                "https://res.cloudinary.com/sourav-cloudinary-account/image/upload/v1662185657/Bit-Buckets/avatar-unknown.png",
+            required: [true, "Profile image is required"],
         },
         email: {
             type: String,
