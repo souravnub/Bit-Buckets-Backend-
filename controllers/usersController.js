@@ -73,11 +73,11 @@ const getUsers = async (req, res) => {
 };
 
 // @route : GET /api/users/me
-// @desc : getting the current user ,, , (pass the authentication and get yourself)
+// @desc : getting the current user ,, , (pass the authentication and get yourself. Authentication token is passed therefore the user will be verified ,, hence we can send password string in the response as well as we know that the user is authorized)
 const getUser = async (req, res) => {
     const userId = req.userId;
 
-    const user = await User.findById(userId).select("-password");
+    const user = await User.findById(userId);
 
     if (!user) {
         throw new NotFoundError("User not found");
