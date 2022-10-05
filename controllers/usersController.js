@@ -6,6 +6,7 @@ const {
 const Bucket = require("../models/Bucket");
 const User = require("../models/User");
 const compareBcryptHash = require("../utils/compareBcryptHash");
+const genHash = require("../utils/genHash");
 const isStringPositiveInteger = require("../utils/isStringPositiveInteger");
 
 // @route : DELETE /api/users
@@ -83,6 +84,36 @@ const getUser = async (req, res) => {
     }
 
     res.json({ success: true, user });
+};
+
+// @route : PUT /api/users/me
+// @desc : updating current user's data
+
+const updateUser = async (req, res) => {
+    const userId = req.userId;
+    const { password, profileImg, userName, email } = req.body;
+
+    let updatedUserObj = {};
+
+    if (password) {
+        updatedUserObj.password = await genHash(password);
+    }
+    if (profileImg) {
+        updatedUserObj.profileImg = profileImg;
+    }
+    if (userName) {
+        updatedUserObj.userName = userName;
+    }
+    if (email) {
+        updatedUserObj.email = email;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedUserObj, {
+        new: true,
+        runValidators: true,
+    });
+
+    res.json({ success: true, updatedUser });
 };
 
 // @route : GET /api/users/:userId/buckets
@@ -286,4 +317,5 @@ module.exports = {
     linkUser,
     unLinkUser,
     deleteUser,
+    updateUser,
 };

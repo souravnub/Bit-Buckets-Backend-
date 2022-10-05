@@ -8,6 +8,7 @@ const {
     unLinkUser,
     getUserPublicBuckets,
     deleteUser,
+    updateUser,
 } = require("../controllers/usersController");
 const authenticateUser = require("../middlewares/authenticate");
 
@@ -22,6 +23,7 @@ router.use(authenticateUser);
 
 router.get("/me", getUser);
 router.delete("/", deleteUser);
+router.put("/me", updateUser);
 router.post(
     "/:userId/giveBucketAccess/:bucketId",
     giveBucketAccessToAnotherUser
