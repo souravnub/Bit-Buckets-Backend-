@@ -7,6 +7,7 @@ const {
 const CustomFormError = require("../errors/custom-form-error");
 const User = require("../models/User");
 const compareBcryptHash = require("../utils/compareBcryptHash");
+const genHash = require("../utils/genHash");
 
 // @route : POST /api/auth/register
 // @desc : creating a new user
