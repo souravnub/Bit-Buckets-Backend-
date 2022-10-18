@@ -1,53 +1,8 @@
-const {
-    NotFoundError,
-    BadRequestError,
-    UnauthorizedError,
-} = require("../errors");
+const { NotFoundError, BadRequestError } = require("../errors");
 const Bucket = require("../models/Bucket");
 const User = require("../models/User");
-const compareBcryptHash = require("../utils/compareBcryptHash");
 const genHash = require("../utils/genHash");
 const isStringPositiveInteger = require("../utils/isStringPositiveInteger");
-
-// @route : DELETE /api/users
-// @desc : delete a user
-// reqHeaders : password (password of the current user)
-
-const deleteUser = async (req, res) => {
-    const userId = req.userId;
-    const { password } = req.headers;
-
-    if (!password.trim()) {
-        throw new BadRequestError(
-            "Providing password while deleting a user is must"
-        );
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-        throw new NotFoundError("No user found");
-    }
-
-    const isPasswordCorrect = await compareBcryptHash(
-        password.trim(),
-        user.password
-    );
-
-    if (!isPasswordCorrect) {
-        throw new UnauthorizedError("Invalid credentials cannot delete user");
-    }
-
-    await user.delete();
-    //remove links of the current user from other users (not doing it in the middleware because a user can only be deleted from one route only and there is no other method to delete a user .... as in Buckets  , , a bucket can be deleted directly manually and also if a user is deleted then the buckets are deleted hence we have two methods to delete a bucket therefore so as to not repeat the code we used a middleware ... but a user cannot be deleted by such a side-effect therefore is not using any middleware)
-    const linked_with = await User.updateMany(
-        { linkedUsers: user._id },
-        { $pull: { linkedUsers: user._id } }
-    );
-    console.log(linked_with);
-
-    res.json({ success: true, message: "User deleted successfully" });
-};
 
 // @route : GET /api/users
 // @desc : get all users
@@ -70,50 +25,6 @@ const getUsers = async (req, res) => {
     users = await users;
 
     res.json({ success: true, users, nbHits: users.length, page });
-};
-
-// @route : GET /api/users/me
-// @desc : getting the current user ,, , (pass the authentication and get yourself. Authentication token is passed therefore the user will be verified ,, hence we can send password string in the response as well as we know that the user is authorized)
-const getUser = async (req, res) => {
-    const userId = req.userId;
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-        throw new NotFoundError("User not found");
-    }
-
-    res.json({ success: true, user });
-};
-
-// @route : PUT /api/users/me
-// @desc : updating current user's data
-
-const updateUser = async (req, res) => {
-    const userId = req.userId;
-    const { password, profileImg, userName, email } = req.body;
-
-    let updatedUserObj = {};
-
-    if (password) {
-        updatedUserObj.password = await genHash(password);
-    }
-    if (profileImg) {
-        updatedUserObj.profileImg = profileImg;
-    }
-    if (userName) {
-        updatedUserObj.userName = userName;
-    }
-    if (email) {
-        updatedUserObj.email = email;
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(userId, updatedUserObj, {
-        new: true,
-        runValidators: true,
-    });
-
-    res.json({ success: true, updatedUser });
 };
 
 // @route : GET /api/users/:userId/buckets
@@ -310,12 +221,9 @@ const unLinkUser = async (req, res) => {
 
 module.exports = {
     getUsers,
-    getUser,
     getUserPublicBuckets,
     giveBucketAccessToAnotherUser,
     removeBucketAccessFromUser,
     linkUser,
     unLinkUser,
-    deleteUser,
-    updateUser,
 };

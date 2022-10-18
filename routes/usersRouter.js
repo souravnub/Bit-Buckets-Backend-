@@ -2,13 +2,10 @@ const express = require("express");
 const {
     giveBucketAccessToAnotherUser,
     getUsers,
-    getUser,
     removeBucketAccessFromUser,
     linkUser,
     unLinkUser,
     getUserPublicBuckets,
-    deleteUser,
-    updateUser,
 } = require("../controllers/usersController");
 const authenticateUser = require("../middlewares/authenticate");
 
@@ -20,10 +17,6 @@ router.get("/:userId/buckets", getUserPublicBuckets);
 
 // below are the request that requires user authentication
 router.use(authenticateUser);
-
-router.get("/me", getUser);
-router.delete("/", deleteUser);
-router.put("/me", updateUser);
 router.post(
     "/:userId/giveBucketAccess/:bucketId",
     giveBucketAccessToAnotherUser
